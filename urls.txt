@@ -1,0 +1,6 @@
+https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/index.html
+https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
+https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
+https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz
+https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
+
