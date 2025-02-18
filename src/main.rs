@@ -1,40 +1,39 @@
+use std::cmp::max;
+use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
 
-struct MnistImage {
+struct Image<T> {
     width: u32,
     height: u32,
-    data: Vec<u8>,
+    data: Vec<T>,
 }
 
-impl MnistImage {
-    fn new(width: u32, height: u32, data: Vec<u8>) -> Self {
+impl<T> Image<T> {
+    fn new(width: u32, height: u32, data: Vec<T>) -> Self {
         let size = (width * height) as usize;
         assert!(size == data.len());
-        MnistImage {
+        Image {
             width,
             height,
             data: data,
         }
     }
 
-    fn _get_pixel(&self, x: u32, y: u32) -> u8 {
-        // not yet used.
-        let index = (y * self.width + x) as usize;
-        self.data[index]
-    }
-
-    fn print(&self) {
+    // Print to screen, use conversion function to convert T to u8 grayscale
+    fn print_with_conversion<F: Fn(&T) -> u8>(&self, convert: F) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let gray = self.data[(y * self.width + x) as usize];
+                let gray = convert(&self.data[(y * self.width + x) as usize]);
                 print!("\x1b[48;2;{};{};{}m  ", gray, gray, gray);
             }
             print!("\x1b[0m\n");
         }
     }
 }
+
+type MnistImage = Image<u8>;
 
 fn maybe_report_magic_mismatch(filename: &str, actual: u32, expected: u32) -> std::io::Result<()> {
     if expected != actual {
@@ -123,11 +122,45 @@ fn main() -> std::io::Result<()> {
     }
     let labels = read_labels(&args[1])?;
     let images = read_images(&args[2])?;
-    println!("Getting {} labels, {} images", labels.len(), images.len());
 
-    for i in 0..std::cmp::min(10, images.len()) {
-        println!("------------------------- Label: {}\n", labels[i]);
-        images[i].print();
+    println!("Getting {} labels, {} images", labels.len(), images.len());
+    if labels.len() != images.len() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "labels vs. image mismatch",
+        ));
     }
+
+    // Sum up all the images for the corresponding labels to get an 'average'
+    // image.
+    type SumImage = Image<u32>;
+    let mut label2sum: BTreeMap<u8, SumImage> = BTreeMap::new();
+    for i in 0..labels.len() {
+        let label = &labels[i];
+        let image = &images[i];
+        if !label2sum.contains_key(label) {
+            label2sum.insert(
+                *label,
+                SumImage::new(image.width, image.height, vec![0; image.data.len()]),
+            );
+        }
+        if let Some(s) = label2sum.get_mut(label) {
+            for pixel in 0..image.data.len() {
+                s.data[pixel] += image.data[pixel] as u32;
+            }
+        }
+    }
+
+    for (label, image) in &label2sum {
+        println!("Label: {} ------------------------------\n", label);
+        let mut max_value: u32 = 0;
+        for val in image.data.iter() {
+            max_value = max(max_value, *val);
+        }
+        let convert = |v: &u32| (255 * *v / max_value) as u8;
+
+        image.print_with_conversion(convert);
+    }
+
     Ok(())
 }
