@@ -155,12 +155,11 @@ fn main() -> std::io::Result<()> {
         println!("Label: {} ------------------------------\n", label);
         let mut max_value: u32 = 0;
         for val in image.data.iter() {
-            max_value = max(max_value, *val);
-        }
-        let convert = |v: &u32| (255 * *v / max_value) as u8;
-
-        image.print_with_conversion(convert);
+	    max_value = max(max_value, *val);
+	}
+        image.print_with_conversion(|value| (255 * value / max_value) as u8);
     }
+
 
     Ok(())
 }
